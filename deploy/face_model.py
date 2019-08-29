@@ -46,9 +46,11 @@ class FaceModel:
     self.args = args
     ctx = None
     if args.gpu > 0:
+      print('Use GPU',args.gpu)
       ctx = mx.gpu(args.gpu)   
     else:
-       ctx = mx.cpu()
+      print('Use CPU')
+      ctx = mx.cpu()
     print(args)
     _vec = args.image_size.split(',')
     assert len(_vec)==2
