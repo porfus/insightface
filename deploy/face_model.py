@@ -79,6 +79,7 @@ class FaceModel:
       return None
     bboxes, pointsus = ret
     alignedImages=[]
+    out_bboxes=[]
 
     for bboxIndex in range(len(bboxes)):
       bbox=bboxes[bboxIndex]
@@ -95,8 +96,9 @@ class FaceModel:
       nimg = face_preprocess.preprocess(face_img, bbox, points, image_size='112,112')
       nimg = cv2.cvtColor(nimg, cv2.COLOR_BGR2RGB)
       aligned = np.transpose(nimg, (2,0,1))
-      alignedImages.append(aligned)
-    return alignedImages
+      alignedImages.append((aligned))
+      out_bboxes.append(bbox)
+    return (alignedImages,out_bboxes)
 
   def get_feature(self, aligned):
     input_blob = np.expand_dims(aligned, axis=0)
