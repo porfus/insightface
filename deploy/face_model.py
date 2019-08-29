@@ -45,7 +45,7 @@ class FaceModel:
   def __init__(self, args):
     self.args = args
     ctx = None
-    if args.gpu > 0:
+    if args.gpu >= 0:
       print('Use GPU',args.gpu)
       ctx = mx.gpu(args.gpu)   
     else:
