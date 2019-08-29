@@ -37,7 +37,7 @@ def get_model(ctx, image_size, model_str, layer):
   sym = all_layers[layer+'_output']
   model = mx.mod.Module(symbol=sym, context=ctx, label_names = None)
   #model.bind(data_shapes=[('data', (args.batch_size, 3, image_size[0], image_size[1]))], label_shapes=[('softmax_label', (args.batch_size,))])
-  model.bind(data_shapes=[('data', (1, 3, image_size[0], image_size[1]))])
+  model.bind(data_shapes=[('data', (1, 3, image_size[0], image_size[1]))],for_training=True)
   model.set_params(arg_params, aux_params)
   return model
 
