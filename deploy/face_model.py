@@ -19,6 +19,7 @@ from mtcnn_detector import MtcnnDetector
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src', 'common'))
 import face_image
 import face_preprocess
+import matplotlib.pyplot as plt
 
 
 def do_flip(data):
@@ -43,7 +44,12 @@ def get_model(ctx, image_size, model_str, layer):
 class FaceModel:
   def __init__(self, args):
     self.args = args
-    ctx = mx.gpu(args.gpu)
+    ctx = None
+    if args.gpu > 0:
+      ctx = mx.gpu(args.gpu)   
+    else:
+       ctx = mx.cpu()
+    print(args)
     _vec = args.image_size.split(',')
     assert len(_vec)==2
     image_size = (int(_vec[0]), int(_vec[1]))
@@ -71,26 +77,40 @@ class FaceModel:
     ret = self.detector.detect_face(face_img, det_type = self.args.det)
     if ret is None:
       return None
-    bbox, points = ret
-    if bbox.shape[0]==0:
-      return None
-    bbox = bbox[0,0:4]
-    points = points[0,:].reshape((2,5)).T
-    #print(bbox)
-    #print(points)
-    nimg = face_preprocess.preprocess(face_img, bbox, points, image_size='112,112')
-    nimg = cv2.cvtColor(nimg, cv2.COLOR_BGR2RGB)
-    aligned = np.transpose(nimg, (2,0,1))
-    return aligned
+    bboxes, pointsus = ret
+    alignedImages=[]
+
+    for bboxIndex in range(len(bboxes)):
+      bbox=bboxes[bboxIndex]
+      if bbox.shape[0]==0:
+        continue
+      
+      score=bbox[4]
+      if(score<0.95):
+        continue
+      bbox = bbox[0:4]
+      points = pointsus[bboxIndex].reshape((2,5)).T
+      #print(bbox)
+      #print(points)
+      nimg = face_preprocess.preprocess(face_img, bbox, points, image_size='112,112')
+      nimg = cv2.cvtColor(nimg, cv2.COLOR_BGR2RGB)
+      aligned = np.transpose(nimg, (2,0,1))
+      alignedImages.append(aligned)
+    return alignedImages
 
   def get_feature(self, aligned):
     input_blob = np.expand_dims(aligned, axis=0)
+    embedding=get_featurues_from_batch(self, input_blob)[0]
+    return embedding
+  
+  def get_featurues_from_batch(self, input_blob):
     data = mx.nd.array(input_blob)
     db = mx.io.DataBatch(data=(data,))
     self.model.forward(db, is_train=False)
-    embedding = self.model.get_outputs()[0].asnumpy()
-    embedding = sklearn.preprocessing.normalize(embedding).flatten()
-    return embedding
+    embeddings = self.model.get_outputs()[0].asnumpy()
+    embeddings = sklearn.preprocessing.normalize(embeddings)
+    return embeddings
+
 
   def get_ga(self, aligned):
     input_blob = np.expand_dims(aligned, axis=0)
